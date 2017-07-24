@@ -54,7 +54,7 @@ The <code>prefixload</code> command is defined as follows:
 {|class="wikitable"
 ! Field Size !! Description !! Data type !! Comments
 |-
-| 4 || nFilters || uint8_t|| The number of prefix filters contained in this message. The maximum value allowed in this field is 50.
+| 1 || nFilters || uint8_t|| The number of prefix filters contained in this message. The maximum value allowed in this field is 50.
 |-
 | ? || filters || prefix_filter[]|| A list of prefix filters
 |}
