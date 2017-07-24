@@ -98,7 +98,7 @@ sequence field or the <code>R</code> value in the signatures.
 
 Alternatively an <code>OP_RETURN</code> output containing the filter could be added.
 
-If a future, more extensible, transaction version is added to bitcoin in the future it might make sense to add a designated 8 byte field in the transaction which clients can use for incoming and out going filters and elimiate the need for brute forcing.
+If a more extensible transaction version is added to bitcoin in the future it might make sense to add a designated 8 byte field in the transaction which clients can use for incoming and out going filters and elimiate the need for brute forcing.
 
 Finally, while most clients will not need more than one filter, the <code>prefixload</code> command takes a list of filters in case use cases arise where more than one filter is needed.
 
