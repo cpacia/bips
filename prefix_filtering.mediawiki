@@ -1,0 +1,112 @@
+<pre>
+  BIP: ???
+  Layer: Peer Services
+  Title: Prefix Filtering
+  Author: Chris Pacia <ctpacia@gmail.com>
+  Comments-Summary: No comments yet.
+  Comments-URI: N/A
+  Status: Draft
+  Type: Standards Track
+  Created: 2017-07-23
+  License: BSD-3-Clause
+           CC0-1.0
+</pre>
+
+==Abstract==
+
+This document specifies a new filtering mechanism for use by lite clients. 
+
+==Motivation==
+
+The purpose of BIP37 was to simultaneously reduce the bandwidth overhead of lite clients and improve privacy vs the alternative of giving a list of addresses to a remote peer. It has succeeded on the first objective but has failed on the second. 
+
+To build a functioning Bitcoin wallet one must be able to discover both incoming and outgoing payments. When using bloom filters to discover incoming payments one can create a large bloom filter containing all the addresses one wishes to use to avoid privacy leaks (although nobody does this a present). But to also discover outgoing payments (necessary to learn of your payment’s confirmations) the BLOOM_UPDATE_ALL flag must be used which triggers the remote peer to add serialized outpoints into the filter for each filter match. The result is that the false positive rate of the filter creeps higher over time, necessitating the need to create a new filter to restore the lower false positive rate. 
+
+Once a peer has more than one filter created by a lite client, they can take the cross section and figure out which addresses belong to the wallet. Since BIP37 lite clients resize the filter regularly we have to assume they offer no privacy. 
+
+Client side filtering has been proposed as an alternative to BIP37. While it is a clear improvement for privacy it’s not clear that it would sufficiently reduce bandwidth overhead for frequently used wallets or in the presence of larger block sizes. Additionally, client side filtering does not provide a means to discover unconfirmed transaction which are typically necessary for the user experience. 
+
+Prefix filtering is an alternative filtering scheme with its own set of tradeoffs. Like BIP37, the filtering is done by the remote peers and offers very low bandwidth overhead and discovery of unconfirmed transactions. Unlike BIP37 it’s not possible for a remote peer to calculate with high certainty which specific addresses are part of your wallet. The downside is, unlike BIP37, users must make their anonymity set public. For many users a public anonymity set might be a reasonable tradeoff for the inability of third parties to figure out which specific addresses in the anonymity set belong to them. 
+
+It’s also important to note that full node wallets also make their anonymity sets public. It’s just that their anonymity set is the entire bitcoin blockchain, where the anonymity set of a prefix filtering client is just a subset of the blockchain. 
+
+
+==Specification==
+
+The following service bit is added:
+<pre>
+    NODE_PREFIX = (1 << 6)
+</pre>
+
+If a node does not support prefix filters but receives a "prefixload", or "prefixclear" message from a peer the node should disconnect that peer immediately. 
+
+// TODO: the protocol version should also be increased?
+
+===New messages===
+
+Two new wire messages are added:
+
+* <code>prefixload</code>, which sets the current prefix filter on the connection
+* <code>prefixclear</code>, which deletes the current filter and goes back to regular pre-BIP??? Usage
+
+The <code>prefixload</code> command is defined as follows:
+
+{|class="wikitable"
+! Field Size !! Description !! Data type !! Comments
+|-
+| 4 || nFilters || uint8_t|| The number of prefix filters contained in this message. The maximum value allowed in this field is 50.
+|-
+| ? || filters || prefix_filter[]|| A list of prefix filters
+|}
+
+The <code>prefix_filter</code> field is defined as follows:
+{|class="wikitable"
+! Field Size !! Description !! Data type !! Comments
+|-
+| 1 || nBits || uint8_t|| The number of bits used by this prefix filter.
+|-
+| 4 || filter || char[4]|| The prefix bits padded with zeros.
+|}
+
+The <code>prefixclear</code> command has no arguments at all.
+
+===Extensions to existing messages===
+
+The <code>fRelay</code> field in the version message should behave the same as in BIP37. If false then broadcast transactions will not be announced until a prefix{load,clear} command is received. If missing or true, no change in protocol behaviour occurs.
+
+===Filter matching algorithm===
+
+Each transaction will be tested against each loaded filter. To determine if a transaction matches a filter, the following algorithm is used. Once a match is found the algorithm aborts.
+
+# Test the hash of the transaction itself.
+# For each output, test each data element of the output script.
+Otherwise there is no match.
+
+A match is found if the first <code>nBits</code> of the evaluated field match the first <code>nBits</code> of the <code>filter</code>.
+
+==Rationale==
+
+To ensure filter matches for incoming transactions lite clients must brute force the data element in their external addresses to begin with the desired prefix. By using a single prefix for all of its addresses lite
+clients avoid the need to  re-size the filter that plagued BIP37. 
+
+Since lite clients must discard addresses which do not match their filter, existing BIP32 derivation schemes (such as BIP44) will not work. For this purchase a new BIP should probably be written for a prefix filtering-compatible
+derivation scheme. 
+
+Matching outgoing transactions is a bit trickier. Ideally we want to avoid putting additional data in our outgoing transactions which might distinguish them from transactions created by full nodes. 
+For this purpose it's recommended that lite clients brute force the outgoing transaction txid to start with their prefix. Candidate fields to iterate during the brute force include the 
+sequence field or the <code>R</code> value in the signatures. 
+
+Alternatively an <code>OP_RETURN</code> output containing the filter could be added.
+
+Finally, while most clients will not need more than one filter, the <code>prefixload</code> command takes a list of filters in case use cases arise where more than one filter is needed.
+
+==References==
+
+*[[bip-0037.mediawiki|BIP37 Connection Bloom filtering]]
+*[[https://github.com/Roasbeef/bips/blob/master/gcs_light_client.mediawiki|BIP??? Compact Client Side Filtering for Light Clients]]
+*[[bip-0032.mediawiki|BIP32 Hierarchical Deterministic Wallets]]
+*[[bip-0044.mediawiki|BIP44 Multi-Account Hierarchy for Deterministic Wallets]]
+
+==Copyright==
+
+This document is dual licensed as BSD 3-clause, and Creative Commons CC0 1.0 Universal.
