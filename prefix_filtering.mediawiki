@@ -24,7 +24,7 @@ To build a functioning Bitcoin wallet one must be able to discover both incoming
 
 Once a peer has more than one filter created by a lite client, they can take the cross section and figure out which addresses belong to the wallet. Since BIP37 lite clients resize the filter regularly we have to assume they offer no privacy. 
 
-Client side filtering has been proposed as an alternative to BIP37. While it is a clear improvement for privacy it’s not clear that it would sufficiently reduce bandwidth overhead for frequently used wallets or in the presence of larger block sizes. Additionally, client side filtering does not provide a means to discover unconfirmed transaction which are typically necessary for the user experience. 
+Client side filtering has been proposed as an alternative to BIP37. While it is a clear improvement for privacy it’s not clear that it would sufficiently reduce bandwidth overhead for frequently used wallets or in the presence of larger block sizes. Additionally, client side filtering does not provide a means to discover unconfirmed transactions which are typically necessary for the user experience. 
 
 Prefix filtering is an alternative filtering scheme with its own set of tradeoffs. Like BIP37, the filtering is done by the remote peers and offers very low bandwidth overhead and discovery of unconfirmed transactions. Unlike BIP37 it’s not possible for a remote peer to calculate with high certainty which specific addresses are part of your wallet. The downside is, unlike BIP37, users must make their anonymity set public. For many users a public anonymity set might be a reasonable tradeoff for the inability of third parties to figure out which specific addresses in the anonymity set belong to them. 
 
@@ -89,7 +89,7 @@ A match is found if the first <code>nBits</code> of the evaluated field match th
 To ensure filter matches for incoming transactions lite clients must brute force the data element in their external addresses to begin with the desired prefix. By using a single prefix for all of its addresses lite
 clients avoid the need to  re-size the filter that plagued BIP37. 
 
-Since lite clients must discard addresses which do not match their filter, existing BIP32 derivation schemes (such as BIP44) will not work. For this purchase a new BIP should probably be written for a prefix filtering-compatible
+Since lite clients must discard addresses which do not match their filter, existing BIP32 derivation schemes (such as BIP44) will not work. For this purpose a new BIP should probably be written for a prefix filtering-compatible
 derivation scheme. 
 
 Matching outgoing transactions is a bit trickier. Ideally we want to avoid putting additional data in our outgoing transactions which might distinguish them from transactions created by full nodes. 
